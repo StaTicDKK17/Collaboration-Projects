@@ -15,6 +15,14 @@
 #define VALID_FOUR_BYTE_UTF_8_P3 0b01000000
 #define VALID_FOUR_BYTE_UTF_8_P4 0b01000000
 
+#define print_bits(x)                                            \
+  do {                                                           \
+    unsigned long long a__ = (x);                                \
+    size_t bits__ = sizeof(x) * 8;                               \
+    printf(#x ": ");                                             \
+    while (bits__--) putchar(a__ &(1ULL << bits__) ? '1' : '0'); \
+    putchar('\n');                                               \
+  } while (0)
 
 enum file_type {
   EMPTY,
@@ -37,7 +45,9 @@ bool is_file_empty(const int length) {
 }
 
 bool is_valid_ascii_char(unsigned char c) {
-  return (c >= 7 && c <= 13) || (c == 27) || (c >= 32 && c <= 126);
+  return (c >= 0x07 && c <= 0x0D) || 
+         (c == 0x1B) || 
+         (c >= 0x20 && c <= 0x7E);
 }
 
 bool is_iso_char(unsigned char c) {
@@ -91,31 +101,37 @@ bool is_utf_file(const unsigned char* bytes, int length) {
   int idx = 0; 
 
   while (idx < length) {
-    printf("%d\n", bytes[idx]);
-    if (is_valid_utf8_one_byte_char(bytes[idx])) {
-      idx++;
-      continue;
-    }
+    //printf("%d\n", bytes[idx]);
 
-    if (length - idx >= 2) {
-      if (is_valid_utf8_two_byte_char(bytes[idx], bytes[idx+1])) {
-        idx += 2;
+    if (length - idx >= 4) {
+      if (bytes[idx] == 0x00 || bytes[idx+1] == 0x00 || bytes[idx+2] == 0x00 || bytes[idx+3] == 0x00) return false;
+      if (is_valid_utf8_four_byte_char(bytes[idx], bytes[idx+1], bytes[idx+2], bytes[idx+3])) {
+        idx += 4;
         continue;
       }
     }
 
     if (length - idx >= 3) {
+      if (bytes[idx] == 0x00 || bytes[idx+1] == 0x00 || bytes[idx+2] == 0x00) return false;
       if (is_valid_utf8_three_byte_char(bytes[idx], bytes[idx+1], bytes[idx+2])) {
         idx += 3;
         continue;
       }
     }
 
-    if (length - idx >= 4) {
-      if (is_valid_utf8_four_byte_char(bytes[idx], bytes[idx+1], bytes[idx+2], bytes[idx+3])) {
-        idx += 4;
+    if (length - idx >= 2) {
+      if (bytes[idx] == 0x00 || bytes[idx+1] == 0x00) return false;
+      if (is_valid_utf8_two_byte_char(bytes[idx], bytes[idx+1])) {
+        idx += 2;
         continue;
       }
+    }
+
+    if (bytes[idx] == 0x00) return false;
+
+    if (is_valid_utf8_one_byte_char(bytes[idx])) {
+      idx++;
+      continue;
     }
 
     return false;
@@ -127,8 +143,8 @@ bool is_utf_file(const unsigned char* bytes, int length) {
 enum file_type get_file_type(const unsigned char* bytes, int length) {
   if (is_file_empty(length)) return EMPTY;
   if (is_ascii_file(bytes, length)) return ASCII;
-  if (is_iso_file(bytes, length)) return ISO8859;
   if (is_utf_file(bytes, length)) return UTF8;
+  if (is_iso_file(bytes, length)) return ISO8859;
   return DATA;
 }
 
