@@ -30,6 +30,8 @@ enum file_type {
   JPEG,
   PRIVATE_SSH_KEY,
   JAVA_CLASS_FILE,
+  PCAPNG,
+  SQLITE_DB,
   DATA
 };
 
@@ -42,6 +44,8 @@ const char* FILE_TYPE_STRINGS[] = {
   "JPEG",
   "Private SSH key",
   "Java Class",
+  "PCAPNG",
+  "SQLite db",
   "data",
 };
 
@@ -56,6 +60,7 @@ bool is_iso_char(unsigned char c);
 bool is_ascii_file(const unsigned char* bytes, int length);
 bool is_iso_file(const unsigned char* bytes, int length);
 bool is_pcapng_file(const unsigned char* bytes, int length);
+bool is_sqlitedb_file(const unsigned char* bytes, int length);
 bool is_valid_utf8_one_byte_char(unsigned char c);
 bool is_valid_utf8_two_byte_char(unsigned char c1, unsigned char c2);
 bool is_valid_utf8_three_byte_char(unsigned char c1, unsigned char c2, unsigned char c3);
@@ -94,6 +99,8 @@ enum file_type get_file_type(const unsigned char* bytes, int length) {
   if (is_jpg_file(bytes, length)) return JPEG;
   if (is_private_ssh_key_file(bytes, length)) return PRIVATE_SSH_KEY;
   if (is_java_class_file(bytes, length)) return JAVA_CLASS_FILE;
+  if (is_pcapng_file(bytes, length)) return PCAPNG;
+  if (is_sqlitedb_file(bytes, length)) return SQLITE_DB;
   return DATA;
 }
 
@@ -257,5 +264,21 @@ bool is_private_ssh_key_file(const unsigned char* bytes, int length) {
 bool is_pcapng_file(const unsigned char* bytes, int length) {
   if (length < 4) return false;
 
-  return bytes[0] == 0x0A && bytes[1] == 0x0D && bytes[2] == 0x0D && bytes[3] == 0x0A;
+  return 
+    bytes[0] == 0x0A && 
+    bytes[1] == 0x0D && 
+    bytes[2] == 0x0D && 
+    bytes[3] == 0x0A;
+}
+
+bool is_sqlitedb_file(const unsigned char* bytes, int length) {
+  if (length < 16) return false;
+
+  unsigned char known_signature_fragment[] = "SQLite format 3";
+
+  for (int i = 0; i < 15; i++) {
+    if (bytes[i] != known_signature_fragment[i]) return false;
+  }
+
+  return bytes[15] == 0x00;
 }
