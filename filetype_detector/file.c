@@ -257,5 +257,5 @@ bool is_private_ssh_key_file(const unsigned char* bytes, int length) {
 bool is_pcapng_file(const unsigned char* bytes, int length) {
   if (length < 4) return false;
 
-  return (bytes[0] == 0x0A && bytes[1] == 0x0D && bytes[2] == 0x0D && bytes[3] == 0x0A)
+  return bytes[0] == 0x0A && bytes[1] == 0x0D && bytes[2] == 0x0D && bytes[3] == 0x0A;
 }
